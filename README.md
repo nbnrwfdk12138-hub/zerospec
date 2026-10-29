@@ -1,51 +1,105 @@
-# Spectrogram Zeros of Colored Noise
+<h1 align="center">Spectrogram Zeros of Colored Noise</h1>
 
-Code and stored results for the paper *Spectrogram Zeros of Colored Noise: An Intensity
-Formula and Spectral Estimation Without Spectral Averaging* (submitted to IEEE Transactions
-on Signal Processing).
+<p align="center"><b>Noise spectrum estimation from the zeros of a Gaussian-window spectrogram</b></p>
 
-The method estimates the window-smoothed noise power spectral density from the zeros of a
-Gaussian-window spectrogram. It detects the zeros on a grid, masks the cells that a strong
-signal empties, smooths the zero counts, and inverts the intensity law by double
-integration; two reference levels fix the remaining affine gauge. All quantities are in
-window-normalized units, with the unit Gaussian window g(t) = 2^(1/4) exp(-pi t^2).
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue.svg">
+  <img alt="Paper: IEEE TSP, under review" src="https://img.shields.io/badge/paper-IEEE%20TSP%20(under%20review)-lightgrey.svg">
+</p>
 
-## Contents
+<p align="center">
+  <img src="docs/banner.png" width="100%" alt="Zeros of Gaussian-window spectrograms: colored noise, noise with a chirp and a tone, and LIGO strain around GW150914">
+</p>
+<p align="center"><sub>White dots: spectrogram zeros. Left: in colored noise the zeros thin where the spectrum peaks and crowd in its valleys. Middle: a sweeping chirp and a persistent tone expel the zeros from their tracks, and the estimator masks these cells (blue outline). Right: LIGO H1 strain around GW150914, where the chirp expels the zeros in the same way.</sub></p>
 
-| Path | Content |
-|---|---|
-| `src/zerospec/` | The package: Gaussian-window STFT and zero detector, rule (11) of the paper (`core.py`); intensity formulas (`theory.py`); the estimator of Algorithm 1 (`estimator.py`); the Welch, minimum-statistics, and MMSE-SPP baselines (`baselines.py`); figure style (`figstyle.py`) |
-| `scripts/run_*.py` | Experiments; each writes `results/*.npz` |
-| `scripts/make_*.py` | Figures; they read `results/*.npz` and write to `figures/` |
-| `results/` | The stored results behind every figure and table of the paper and its supplementary material (SM) |
-| `REPRODUCE.md` | Which script produces which figure or table |
+This repository holds the code and the stored results of the paper *Spectrogram Zeros of Colored Noise: An Intensity Formula and Spectral Estimation Without Spectral Averaging*, submitted to the IEEE Transactions on Signal Processing. The stored results regenerate every figure of the paper and of its supplementary material (SM), and every experiment can be rerun from public data.
 
-## Installation
+## The idea
 
-Python 3.12 or later; the results were produced with Python 3.14. With
-[uv](https://docs.astral.sh/uv/):
+Detection, denoising, and inference start from an estimate of the noise spectrum, and the hardest case is a strong signal in the same band as the noise. Welch, multitaper, minimum-statistics, and MMSE estimators average spectrogram values, so the energy of an in-band signal enters their estimates. This code reads the noise spectrum from where the spectrogram vanishes.
+
+With a Gaussian window, the spectrogram zeros of any circular Gaussian noise, stationary or not, form a point process. Its density depends only on the expected spectrogram $P$:
+
+$$\rho(t,f) \;=\; 1 \;+\; \frac{1}{4\pi}\,\Delta \log P(t,f),$$
+
+where $\Delta$ is the Laplacian in the time–frequency plane. A flat spectrum gives one zero per time–frequency cell, spectral peaks thin the zeros, and valleys crowd them. Counting the zeros and inverting this law recovers the window-smoothed noise spectrum: its shape comes from the zero locations alone, and two reference levels fix its scale. A strong deterministic signal suppresses the zero density exponentially in its local signal-to-noise ratio, so the cells it occupies are detected, masked, and bridged.
+
+## Highlights
+
+- **Exact intensity laws** for colored, nonstationary, and generalized Gaussian noise, white noise included, confirmed by Monte Carlo with no fitted parameter.
+- **Clean noise:** within 0.3 dB of Welch and of oracle-calibrated minimum statistics, with a proved uniform rate.
+- **Persistent in-band line:** value-based estimators report the line power as noise floor, by +14 to +19 dB; the zero estimate detects the line and bridges the floor beneath it to within +0.62 dB.
+- **Measured data:** on-source LIGO strain around GW150914, continuous speech, and bearing vibration.
+
+## Results
+
+**Intensity laws.** Monte Carlo zero densities against the theory, with no fitted parameter: a stationary bimodal spectrum, modulated white noise, and white noise plus a tone.
+
+<img src="docs/fig1_intensity.png" width="100%" alt="Fig. 1: intensity laws against Monte Carlo">
+
+**Clean colored noise.** One record with its zeros, the estimates of all methods on one record, and the sup-error against the record length.
+
+<img src="docs/fig2_clean_noise.png" width="100%" alt="Fig. 2: clean colored noise and the rate">
+
+**Strong in-band signals.** A sweeping chirp and a persistent tone at increasing SNR: one record with its mask, the full-band bias, and the bias at the tone rows.
+
+<img src="docs/fig3_strong_signals.png" width="100%" alt="Fig. 3: strong in-band signals">
+
+**GW150914, on-source.** The zeros around the event, the zero estimate from the 64 s containing the event against the off-source Welch reference, and the bias under injected chirps.
+
+<img src="docs/fig4_gw150914.png" width="100%" alt="Fig. 4: on-source estimation on LIGO strain around GW150914">
+
+**Continuous speech.** The arithmetic- and geometric-mean noise spectra under fluctuating noise, and the bias of each method against its own estimand in kitchen and cafeteria noise.
+
+<img src="docs/fig5_speech.png" width="100%" alt="Fig. 5: continuous speech">
+
+## Quick start
+
+Python 3.12 or later. With [uv](https://docs.astral.sh/uv/):
 
 ```bash
+git clone https://github.com/nbnrwfdk12138-hub/zerospec.git
+cd zerospec
 uv sync
 uv run python scripts/smoke_test.py
 ```
 
-The smoke test runs in a few seconds. It prints the detected zero density of white noise,
-which should be close to 1, and the estimation error on one colored-noise record. Without
-uv, `pip install -e .` installs the package and its dependencies.
+Without uv, `pip install -e .` installs the package and its dependencies. The smoke test runs in a few seconds; it prints the zero density of white noise, which should be close to 1, and the estimation error on one colored-noise record.
 
-## Regenerating the figures from the stored results
+Estimating a noise spectrum takes a few lines:
+
+```python
+import numpy as np
+from zerospec import ZeroSpecEstimator, synth_stationary
+from zerospec.theory import smoothed_psd
+
+S = lambda nu: 0.15 + 1.2 * np.exp(-(nu - 0.8) ** 2 / 0.5) + 0.7 * np.exp(-(nu + 1.0) ** 2 / 0.245)
+T = 256.0                                    # record length, in units of the window
+x = synth_stationary(S, T, np.random.default_rng(0))
+
+r = ZeroSpecEstimator(band=(-1.8, 1.8), mask=True).fit(x, T)
+err_db = 10 / np.log(10) * (r.Lambda - np.log(smoothed_psd(S, r.f)))
+print(f"rms error {np.sqrt(np.mean(err_db ** 2)):.2f} dB")   # about 0.4 dB
+```
+
+`r.f` holds the analysis frequencies and `r.Lambda` the estimated log of the window-smoothed noise PSD. All quantities are in window-normalized units, with the unit Gaussian window g(t) = 2^(1/4) exp(-π t²), in which a time–frequency cell has unit area.
+
+## Reproducing the paper
+
+The stored results regenerate the figures without rerunning any experiment:
 
 ```bash
 uv run python scripts/make_rows3_r1.py      # Figs. 1-5 of the paper
 uv run python scripts/make_sm_panels_r1.py  # Figs. 6-9 of the SM
 ```
 
-Both write PDF and PNG files to `figures/rows3_r1/`. Most numbers quoted in the paper are
-stored in the same `results/*.npz` files; `REPRODUCE.md` marks the few that a script prints
-instead.
+Both write PDF and PNG files to `figures/rows3_r1/`. Most numbers quoted in the paper are stored in the same `results/*.npz` files; [`REPRODUCE.md`](REPRODUCE.md) maps every figure and table to its scripts and marks the few numbers that a script prints instead.
 
-## Rerunning the experiments
+<details>
+<summary><b>Rerunning the experiments</b></summary>
+
+<br>
 
 Download the data first (about 2 GB in all):
 
@@ -53,10 +107,7 @@ Download the data first (about 2 GB in all):
 uv run python scripts/download_data.py
 ```
 
-This fetches the LIGO, LibriSpeech, and DEMAND data and unpacks the archives where the
-experiments read them. The Ottawa bearing data may have to be downloaded by hand from
-Mendeley Data (see below) and unpacked so that
-`data/ottawa/v43hmbwxpm-2/1 Data collected from a healthy bearing/H-A-1.mat` exists.
+This fetches the LIGO, LibriSpeech, and DEMAND data and unpacks the archives where the experiments read them. The Ottawa bearing data may have to be downloaded by hand from Mendeley Data (see [Data](#data)) and unpacked so that `data/ottawa/v43hmbwxpm-2/1 Data collected from a healthy bearing/H-A-1.mat` exists.
 
 Then run the experiment scripts with `uv run python scripts/<script>`:
 
@@ -74,10 +125,24 @@ Then run the experiment scripts with `uv run python scripts/<script>`:
 | `run_s2_lattice.py` | SM Sec. S-II (zero lattice of two logons) |
 | `run_s5_realnoise.py` | SM Fig. 9 |
 
-On a desktop PC the runs take from about a minute (bearing) to about an hour (Fig. 3).
-Each script fixes its random seed; the seeds are also listed in SM Sec. S-IV. Rerunning
-reproduces the stored results up to floating-point differences between platforms and
-library versions.
+On a desktop PC the runs take from about a minute (bearing) to about an hour (Fig. 3). Each script fixes its random seed; the seeds are also listed in SM Sec. S-IV. Rerunning reproduces the stored results up to floating-point differences between platforms and library versions.
+
+</details>
+
+## Repository layout
+
+```text
+src/zerospec/      the package
+  core.py          Gaussian-window STFT and zero detector, rule (11) of the paper
+  theory.py        intensity formulas
+  estimator.py     the estimator of Algorithm 1
+  baselines.py     Welch, minimum-statistics, and MMSE-SPP baselines
+  figstyle.py      figure style
+scripts/           run_*.py experiments and make_*.py figures
+results/           stored results behind every figure and table
+docs/              images on this page
+REPRODUCE.md       which script produces which figure or table
+```
 
 ## Data
 
@@ -90,12 +155,10 @@ The data are public and are not redistributed here.
 | DEMAND, environments DKITCHEN and PCAFETER | Zenodo, https://doi.org/10.5281/zenodo.1227121 | Fig. 5, SM Table II |
 | University of Ottawa variable-speed bearing data | Mendeley Data, https://data.mendeley.com/datasets/v43hmbwxpm/2 | SM Fig. 8 |
 
-## License
-
-The code is released under the MIT License (see `LICENSE`). The datasets keep the licenses
-of their providers.
-
 ## Citation
 
-If you use this code, please cite the paper. The full reference will be added here on
-publication.
+If you use this code, please cite the paper. The full reference will be added here on publication.
+
+## License
+
+The code is released under the MIT License (see [`LICENSE`](LICENSE)). The datasets keep the licenses of their providers.
