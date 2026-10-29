@@ -21,7 +21,9 @@ Detection, denoising, and inference start from an estimate of the noise spectrum
 
 With a Gaussian window, the spectrogram zeros of any circular Gaussian noise, stationary or not, form a point process. Its density depends only on the expected spectrogram $P$:
 
-$$\rho(t,f) \;=\; 1 \;+\; \frac{1}{4\pi}\,\Delta \log P(t,f),$$
+```math
+\rho(t,f) = 1 + \frac{1}{4\pi}\,\Delta \log P(t,f),
+```
 
 where $\Delta$ is the Laplacian in the time–frequency plane. A flat spectrum gives one zero per time–frequency cell, spectral peaks thin the zeros, and valleys crowd them. Counting the zeros and inverting this law recovers the window-smoothed noise spectrum: its shape comes from the zero locations alone, and two reference levels fix its scale. A strong deterministic signal suppresses the zero density exponentially in its local signal-to-noise ratio, so the cells it occupies are detected, masked, and bridged.
 
@@ -74,13 +76,17 @@ import numpy as np
 from zerospec import ZeroSpecEstimator, synth_stationary
 from zerospec.theory import smoothed_psd
 
-S = lambda nu: 0.15 + 1.2 * np.exp(-(nu - 0.8) ** 2 / 0.5) + 0.7 * np.exp(-(nu + 1.0) ** 2 / 0.245)
-T = 256.0                                    # record length, in units of the window
+# colored test noise with a two-peak PSD, 256 window units long
+S = lambda nu: (0.15 + 1.2 * np.exp(-(nu - 0.8) ** 2 / 0.5)
+                + 0.7 * np.exp(-(nu + 1.0) ** 2 / 0.245))
+T = 256.0
 x = synth_stationary(S, T, np.random.default_rng(0))
 
+# estimate the window-smoothed noise PSD from the zeros
 r = ZeroSpecEstimator(band=(-1.8, 1.8), mask=True).fit(x, T)
+
 err_db = 10 / np.log(10) * (r.Lambda - np.log(smoothed_psd(S, r.f)))
-print(f"rms error {np.sqrt(np.mean(err_db ** 2)):.2f} dB")   # about 0.4 dB
+print(f"rms error {np.sqrt(np.mean(err_db ** 2)):.2f} dB")  # about 0.4 dB
 ```
 
 `r.f` holds the analysis frequencies and `r.Lambda` the estimated log of the window-smoothed noise PSD. All quantities are in window-normalized units, with the unit Gaussian window g(t) = 2^(1/4) exp(-π t²), in which a time–frequency cell has unit area.
