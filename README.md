@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <img src="docs/banner.png" width="100%" alt="Zeros of Gaussian-window spectrograms: colored noise, noise with a chirp and a tone, and LIGO strain around GW150914">
+  <img src="docs/banner.png" width="100%" alt="The method as one scene: records from three sources, their spectrogram, the lifted plane of its zeros, the noise spectrum as a landscape with the zeros on it, the five steps of the algorithm, and measured data with their zeros">
 </p>
-<p align="center"><sub>White dots: spectrogram zeros. Left: in colored noise the zeros thin where the spectrum peaks and crowd in its valleys. Middle: a sweeping chirp and a persistent tone expel the zeros from their tracks, and the estimator masks these cells (blue outline). Right: LIGO H1 strain around GW150914, where the chirp expels the zeros in the same way.</sub></p>
+<p align="center"><sub>Overview of the method. Records from gravitational-wave detectors, speech, and machines are signals riding on noise. The zeros of a record's spectrogram (lifted plane) form a point pattern whose density follows the noise spectrum; a strong signal expels the zeros from its track and leaves a ring of excess zeros around it (lens, Theorem 2), and the estimator masks those cells. The zero density maps onto the noise spectrum (Theorem 1), drawn as a landscape with the zeros lying on it: the tone stands on the landscape as a light curtain and the spectrum continues beneath it, while the dashed line on the front face is the spike that a time average of the spectrogram reads at the tone. Bottom: the five steps of Algorithm 1. Right: GW150914 strain, speech, and bearing vibration with their zeros.</sub></p>
 
 This repository holds the code and the stored results of the paper *Spectrogram Zeros of Colored Noise: An Intensity Formula and Spectral Estimation Without Spectral Averaging*, submitted to the IEEE Transactions on Signal Processing. The stored results regenerate every figure of the paper and of its supplementary material (SM), and every experiment can be rerun from public data.
 
